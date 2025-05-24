@@ -2,54 +2,17 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>背景透過ツール（スマホ対応）</title>
+    <title>背景透過ツール</title>
     <style>
-        body {
-            font-family: sans-serif;
-            margin: 0;
-            padding: 20px;
-            text-align: center;
-            background-color: #f9f9f9;
-        }
-        h1 {
-            font-size: 1.5em;
-        }
-        input, button {
-            font-size: 1em;
-            margin: 10px 0;
-            padding: 10px;
-            width: 90%;
-            max-width: 300px;
-        }
-        canvas {
-            margin-top: 20px;
-            max-width: 100%;
-            height: auto;
-            background: #fff;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-        #downloadLink {
-            display: inline-block;
-            margin-top: 15px;
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-        }
-        #loading {
-            margin-top: 10px;
-            color: #555;
-        }
+        body { font-family: sans-serif; text-align: center; padding: 20px; }
+        canvas { max-width: 100%; height: auto; margin-top: 20px; }
     </style>
 </head>
 <body>
-    <h1>背景透過ツール</h1>
+    <h1>背景透過ツール（高画質）</h1>
     <input type="file" id="fileInput" accept="image/*">
     <br>
     <button id="processButton">背景を透過</button>
-    <div id="loading" style="display:none;">処理中...お待ちください</div>
     <br>
     <canvas id="outputCanvas"></canvas>
     <br>
@@ -62,7 +25,6 @@
         const processButton = document.getElementById('processButton');
         const outputCanvas = document.getElementById('outputCanvas');
         const downloadLink = document.getElementById('downloadLink');
-        const loadingText = document.getElementById('loading');
 
         let imageBuffer;
 
@@ -79,7 +41,7 @@
                 return;
             }
 
-            loadingText.style.display = 'block';
+            processButton.textContent = '処理中...お待ちください';
             processButton.disabled = true;
 
             try {
@@ -90,18 +52,10 @@
                 const url = URL.createObjectURL(resultBlob);
                 const img = new Image();
                 img.onload = () => {
-                    // スマホメモリ対策：canvasに収まるよう縮小
-                    const maxWidth = 800;
-                    const scale = Math.min(1, maxWidth / img.width);
-                    const width = img.width * scale;
-                    const height = img.height * scale;
-
-                    outputCanvas.width = width;
-                    outputCanvas.height = height;
-
+                    outputCanvas.width = img.width;
+                    outputCanvas.height = img.height;
                     const ctx = outputCanvas.getContext('2d');
-                    ctx.clearRect(0, 0, width, height);
-                    ctx.drawImage(img, 0, 0, width, height);
+                    ctx.drawImage(img, 0, 0);
 
                     // ダウンロードリンク設定
                     outputCanvas.toBlob((blob) => {
@@ -115,7 +69,7 @@
                 console.error(err);
                 alert('背景除去中にエラーが発生しました。');
             } finally {
-                loadingText.style.display = 'none';
+                processButton.textContent = '背景を透過';
                 processButton.disabled = false;
             }
         });
