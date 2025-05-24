@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>背景透過ツール（スマホ対応）</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            font-size: 1.5em;
+        }
+        input, button {
+            font-size: 1em;
+            margin: 10px 0;
+            padding: 10px;
+            width: 90%;
+            max-width: 300px;
+        }
+        canvas {
+            margin-top: 20px;
+            max-width: 100%;
+            height: auto;
+            background: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        #downloadLink {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        #loading {
+            margin-top: 10px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <h1>背景透過ツール</h1>
+    <input type="file" id="fileInput" accept="image/*">
+    <br>
+    <button id="processButton">背景を透過</button>
+    <div id="loading" style="display:none;">処理中...お待ちください</div>
+    <br>
+    <canvas id="outputCanvas"></canvas>
+    <br>
+    <a id="downloadLink" style="display:none;" download="transparent.png">透過画像をダウンロード</a>
+
+    <script type="module">
+        import { removeBackground } from 'https://cdn.jsdelivr.net/npm/rembg-js@1.1.1/+esm';
+
+        const fileInput = document.getElementById('fileInput');
+        const processButton = document.getElementById('processButton');
+        const outputCanvas = document.getElementById('outputCanvas');
+        const downloadLink = document.getElementById('downloadLink');
+        const loadingText = document.getElementById('loading');
+
+        let imageBuffer;
+
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                imageBuffer = await file.arrayBuffer();
+            }
+        });
+
+        processButton.addEventListener('click', async () => {
+            if (!imageBuffer) {
+                alert('画像を選択してください。');
+                return;
+            }
+
+            loadingText.style.display = 'block';
+            processButton.disabled = true;
+
+            try {
+                const resultBlob = await removeBackground(imageBuffer, {
+                    outputFormat: 'image/png',
+                });
+
+                const url = URL.createObjectURL(resultBlob);
+                const img = new Image();
+                img.onload = () => {
+                    // スマホメモリ対策：canvasに収まるよう縮小
+                    const maxWidth = 800;
+                    const scale = Math.min(1, maxWidth / img.width);
+                    const width = img.width * scale;
+                    const height = img.height * scale;
+
+                    outputCanvas.width = width;
+                    outputCanvas.height = height;
+
+                    const ctx = outputCanvas.getContext('2d');
+                    ctx.clearRect(0, 0, width, height);
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // ダウンロードリンク設定
+                    outputCanvas.toBlob((blob) => {
+                        const downloadUrl = URL.createObjectURL(blob);
+                        downloadLink.href = downloadUrl;
+                        downloadLink.style.display = 'inline-block';
+                    }, 'image/png');
+                };
+                img.src = url;
+            } catch (err) {
+                console.error(err);
+                alert('背景除去中にエラーが発生しました。');
+            } finally {
+                loadingText.style.display = 'none';
+                processButton.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
